@@ -1,0 +1,57 @@
+{
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "workbookDisplayName": {
+        "type": "string",
+        "defaultValue": "Imperva WAF Attack Analytics",
+        "metadata": {
+          "description": "The friendly name for the workbook that is used in the Gallery or Saved List.  This name must be unique within a resource group."
+        }
+      },
+      "workbookType": {
+        "type": "string",
+        "defaultValue": "sentinel",
+        "metadata": {
+          "description": "The gallery that the workbook will been shown under. Supported values include workbook, tsg, etc. Leave as is."
+        }
+      },
+      "workbookSourceId": {
+        "type": "string",
+        "defaultValue": "",
+        "metadata": {
+          "description": "The full resource ID of the associated log analytics space. "
+        }
+      },
+      "workbookId": {
+        "type": "string",
+        "defaultValue": "[newGuid()]",
+        "metadata": {
+          "description": "The unique guid for this workbook instance. Leave as is."
+        }
+      }
+    },
+    "resources": [
+      {
+        "name": "[parameters('workbookId')]",
+        "type": "microsoft.insights/workbooks",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2022-04-01",
+        "dependsOn": [],
+        "kind": "shared",
+        "properties": {
+          "displayName": "[parameters('workbookDisplayName')]",
+          "serializedData": "{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"parameters\":[{\"id\":\"b5ec8cf3-dd2f-499f-934e-7b81e0332dbd\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"Timerange\",\"type\":4,\"isRequired\":true,\"typeSettings\":{\"selectableValues\":[{\"durationMs\":300000},{\"durationMs\":900000},{\"durationMs\":1800000},{\"durationMs\":3600000},{\"durationMs\":14400000},{\"durationMs\":43200000},{\"durationMs\":86400000},{\"durationMs\":172800000},{\"durationMs\":259200000},{\"durationMs\":604800000},{\"durationMs\":1209600000},{\"durationMs\":2419200000},{\"durationMs\":2592000000},{\"durationMs\":5184000000},{\"durationMs\":7776000000}],\"allowCustom\":true},\"timeContext\":{\"durationMs\":86400000},\"value\":{\"durationMs\":1209600000}}],\"style\":\"pills\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"name\":\"parameters - 4\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ImpervaWAFAttackAnalytics_CL\\r\\n| summarize TotalEvents = sum(toint(cs1_s)) by Name_s // Summarize total events by incident\\r\\n| top 5 by TotalEvents desc // Get the top 5 incidents with the most events\",\"size\":0,\"title\":\"Top 5 incidents by events\",\"timeContext\":{\"durationMs\":604800000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"name\":\"Top 5 incidents by events\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ImpervaWAFAttackAnalytics_CL\\r\\n| extend ip_list = split(cs5_s, \\\",\\\")\\r\\n| mv-expand ip_list to typeof(string)\\r\\n| extend GeoInfo = parse_json(geo_info_from_ip_address(ip_list))\\r\\n| evaluate bag_unpack(GeoInfo)\\r\\n| extend Country = tostring(country), IP = tostring(ip_list), Lat = todouble(latitude), Long = todouble(longitude)\\r\\n| summarize CountByIP = count() by IP, Country, Lat, Long\\r\\n| summarize CountByCountry = sum(CountByIP) by Country, Lat, Long\\r\\n\",\"size\":3,\"title\":\"Originating Attacks by Geolocation\",\"timeContextFromParameter\":\"Timerange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"visualization\":\"map\",\"mapSettings\":{\"locInfo\":\"CountryRegion\",\"locInfoColumn\":\"Country\",\"latitude\":\"Lat\",\"longitude\":\"Long\",\"sizeSettings\":\"CountByCountry\",\"sizeAggregation\":\"Count\",\"legendMetric\":\"CountByCountry\",\"legendAggregation\":\"Sum\",\"itemColorSettings\":{\"nodeColorField\":\"CountByCountry\",\"colorAggregation\":\"Sum\",\"type\":\"heatmap\",\"heatmapPalette\":\"yellowOrangeRed\"},\"numberFormatSettings\":{\"unit\":0,\"options\":{\"style\":\"decimal\"}}}},\"customWidth\":\"100\",\"name\":\"Originating Attacks by Geolocation\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ImpervaWAFAttackAnalytics_CL\\r\\n| extend Timestamp = todatetime(TimeGenerated) // Replace with your actual timestamp field\\r\\n| extend Severity = tostring(Severity_s)\\r\\n| summarize Count = count() by bin(Timestamp, 1h), Severity // Aggregates data in 1-hour bins\\r\\n| order by Severity asc, Timestamp asc // Sorts first by severity then time\\r\\n| render timechart\",\"size\":0,\"title\":\"Attacks over time by severity\",\"timeContextFromParameter\":\"Timerange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"customWidth\":\"75\",\"name\":\"Attacks over time by severity\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ImpervaWAFAttackAnalytics_CL \\r\\n| extend ip_list = split(cs5_s, \\\",\\\")\\r\\n| mv-expand ip_list to typeof(string)\\r\\n| summarize Count = count() by ip_list\\r\\n| top 10 by Count desc\",\"size\":0,\"title\":\"Top offending IPs\",\"timeContextFromParameter\":\"Timerange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"customWidth\":\"25\",\"name\":\"Top offending IPs\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ImpervaWAFAttackAnalytics_CL\\r\\n| where cs2_s != \\\"100\\\" and cs2_s != \\\"\\\"\\r\\n| extend endpoint = request_s, attack_type = cs7_s, percent_blocked = cs2_s, severity = Severity_s\\r\\n| project endpoint, attack_type,severity, percent_blocked\",\"size\":0,\"title\":\"Attacks with alerted events\",\"timeContextFromParameter\":\"Timerange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"customWidth\":\"75\",\"name\":\"Attacks with alerted events\"},{\"type\":1,\"content\":{\"json\":\"## Incidents Breakdown\"},\"name\":\"text - 1\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ImpervaWAFAttackAnalytics_CL \\n| project Severity_s\\n| summarize Count=count() by Severity_s\\n| render piechart\\n\",\"size\":1,\"title\":\"Incidents by Severity\",\"timeContextFromParameter\":\"Timerange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"customWidth\":\"25\",\"name\":\"Incidents by Severity\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ImpervaWAFAttackAnalytics_CL \\r\\n| project request_s\\r\\n| summarize Count=count() by request_s\",\"size\":0,\"title\":\"Target Endpoint breakdown\",\"timeContextFromParameter\":\"Timerange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"visualization\":\"barchart\"},\"customWidth\":\"70\",\"name\":\"Target Endpoint breakdown\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ImpervaWAFAttackAnalytics_CL\\r\\n| where TimeGenerated >= ago(90d) // Adjust the time range as needed\\r\\n| extend WeekStart = startofweek(TimeGenerated) // Calculate the start of the week for each event\\r\\n| summarize TotalEvents = sum(toint(cs1_s)), AlertCount = count() by WeekStart // Summarize by week\\r\\n| render areachart  // Visualize the result as a time chart\",\"size\":0,\"title\":\"Event Aggregation Performance\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"name\":\"Event Aggregation Performance\"}],\"isLocked\":false,\"fallbackResourceIds\":[\"/subscriptions/d6054757-99d2-46b6-a73b-28d900cc3554/resourcegroups/sentinel-dev/providers/microsoft.operationalinsights/workspaces/sentinel-dev\"],\"fromTemplateId\":\"sentinel-UserWorkbook\"}",
+          "version": "1.0",
+          "sourceId": "[parameters('workbookSourceId')]",
+          "category": "[parameters('workbookType')]"
+        }
+      }
+    ],
+    "outputs": {
+      "workbookId": {
+        "type": "string",
+        "value": "[resourceId( 'microsoft.insights/workbooks', parameters('workbookId'))]"
+      }
+    },
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#"
+  }

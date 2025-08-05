@@ -1,0 +1,66 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "sentinel_workspace_name": {
+            "type": "String",
+            "metadata": {
+                "description": "The name of the Sentinel workspace where the rule will be deployed."
+            }
+        }
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('sentinel_workspace_name'),'/Microsoft.SecurityInsights/8d837da0-0db9-4777-abd7-190b9f4603c3')]",
+            "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+            "kind": "Scheduled",
+            "apiVersion": "2022-11-01-preview",
+            "properties": {
+                "displayName": "Imperva WAF Attack Analytics Incident",
+                "description": "Imperva WAF Attack Analytics triggered incident.",
+                "severity": "Low",
+                "enabled": true,
+                "query": "ImpervaWAFAttackAnalytics_CL\r\n| extend Sentinel_Severity = case(Severity_s == \"MINOR\", \"Low\", Severity_s == \"MAJOR\", \"Medium\", Severity_s == \"CRITICAL\", \"High\", Severity_s)\r\n",
+                "queryFrequency": "PT1H",
+                "queryPeriod": "PT1H",
+                "triggerOperator": "GreaterThan",
+                "triggerThreshold": 0,
+                "suppressionDuration": "PT5H",
+                "suppressionEnabled": false,
+                "startTimeUtc": null,
+                "tactics": [
+                    "InitialAccess"
+                ],
+                "techniques": [
+                    "T0819"
+                ],
+                "alertRuleTemplateName": null,
+                "incidentConfiguration": {
+                    "createIncident": true,
+                    "groupingConfiguration": {
+                        "enabled": false,
+                        "reopenClosedIncident": false,
+                        "lookbackDuration": "PT5H",
+                        "matchingMethod": "AllEntities",
+                        "groupByEntities": [],
+                        "groupByAlertDetails": [],
+                        "groupByCustomDetails": []
+                    }
+                },
+                "eventGroupingSettings": {
+                    "aggregationKind": "AlertPerResult"
+                },
+                "alertDetailsOverride": {
+                    "alertDisplayNameFormat": "{{cs7_s}} against {{request_s}}  ",
+                    "alertDescriptionFormat": " {{Name_s}} attack against {{request_s}} of {{Sentinel_Severity}} severity.",
+                    "alertSeverityColumnName": "Sentinel_Severity",
+                    "alertDynamicProperties": []
+                },
+                "customDetails": {},
+                "entityMappings": null,
+                "sentinelEntitiesMappings": null,
+                "templateVersion": null
+            }
+        }
+    ]
+}
